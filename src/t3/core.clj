@@ -16,16 +16,20 @@
          :current_player "x"
          :history []}))
 
-
-(defn switch-player []
-  (swap! game-state assoc :current_player (next-player)))
-
+(defn reset-state
+  []
+  (swap! game-state (fn [_] {:board game-board
+                            :current_player "x"
+                            :history []})))
 
 (defn next-player
   []
   (if (= (:current_player @game-state) "x")
     "o"
     "x"))
+
+(defn switch-player []
+  (swap! game-state assoc :current_player (next-player)))
 
 
 (defn place
@@ -37,18 +41,24 @@
 (defn check-winner
   "Check winner from the gameboard"
   [gb]
-  (or
-   ;; horizontals
-   (= (:s0 gb) (:s1 gb) (:s2 gb))
-   (= (:s3 gb) (:s4 gb) (:s5 gb))
-   (= (:s6 gb) (:s7 gb) (:s8 gb))
-   ;; verticals
-   (= (:s0 gb) (:s3 gb) (:s6 gb))
-   (= (:s1 gb) (:s4 gb) (:s7 gb))
-   (= (:s2 gb) (:s5 gb) (:s8 gb))
-   ;; diagonals
-   (= (:s0 gb) (:s4 gb) (:s8 gb))
-   (= (:s2 gb) (:s4 gb) (:s6 gb))))
+  (and
+   ;; check if gameboard contains enough pieces
+   (>= (count
+        (filter (fn [s] (not (int? s)))
+                (vals gb)))
+       5)
+   (or
+    ;; horizontals
+    (= (:s0 gb) (:s1 gb) (:s2 gb))
+    (= (:s3 gb) (:s4 gb) (:s5 gb))
+    (= (:s6 gb) (:s7 gb) (:s8 gb))
+    ;; verticals
+    (= (:s0 gb) (:s3 gb) (:s6 gb))
+    (= (:s1 gb) (:s4 gb) (:s7 gb))
+    (= (:s2 gb) (:s5 gb) (:s8 gb))
+    ;; diagonals
+    (= (:s0 gb) (:s4 gb) (:s8 gb))
+    (= (:s2 gb) (:s4 gb) (:s6 gb)))))
 
 
 (defn draw-board
@@ -80,30 +90,50 @@
   (print "\n")
   (print "|      |       |      |")
   (print "\n")
-  (print "- - - - - - - - - - - -"))
+  (print "- - - - - - - - - - - -")
+  (println))
 
 
 
-(defn is-valid
+(defn move-validator
   [s]
   (let [b (:board @game-state)
         k (keyword (str "s" s))]
     (and (contains? b k)
          (int? (k b)))))
 
+(defn yn-validator
+  [s]
+  (or (= "y" s)
+      (= "n" s)))
+
 (defn ask-input
-  [text]
+  [text validator]
   (println text)
   (def x (read-line))
-  (if (is-valid x)
+  (if (validator x)
     x
     (let []
       (println "Invalid input: ")
-      (ask-input text))))
+      (ask-input text validator))))
 
 (defn game-loop
   []
   (while (not (check-winner (:board @game-state)))
     (println "Tic Tac Toe")
-
-    )
+    (draw-board (:board @game-state))
+    (println "Current Player: " (:current_player @game-state))
+    (def move (ask-input "Enter square number: " move-validator))
+    (swap! game-state assoc :board (place (:board @game-state)
+                                          (keyword (str "s" move))
+                                          (:current_player @game-state)))
+    (if (not (check-winner (:board @game-state)))
+      (switch-player)))
+  (draw-board (:board @game-state))
+  (println (:current_player @game-state) " wins")
+  (def play-again? (ask-input "Play again? (y/n)" yn-validator))
+  (if (= "y" play-again?)
+    (fn []
+      (reset-state)
+      (game-loop))
+    (println "Thanks for playing.")))
