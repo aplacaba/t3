@@ -14,7 +14,7 @@
    :status :stopped
    :history []
    :scores {:x 0
-            :y 0
+            :o 0
             :draw 0}})
 
 
@@ -31,7 +31,7 @@
 
 (defn reset-scores
   []
-  (swap! game-state assoc :scores {:x 0 :y 0 :draw 0}))
+  (swap! game-state assoc :scores {:x 0 :o 0 :draw 0}))
 
 ;; game logic
 (defn next-player
@@ -136,8 +136,10 @@
 
 (defn game-setup
   []
-  (swap! game-state assoc :board game-board
-                          :status :started))
+  (swap! game-state assoc
+         :board game-board
+         :status :started
+         :current_player "x"))
 
 (defn get-move
   []
@@ -166,11 +168,21 @@
                                                     new-score))
       1)))
 
+(defn scoreboard
+  [scores]
+  (let [x (:x scores)
+        o (:o scores)
+        d (:draw scores)]
+    (println "Scores\n")
+    (println "X:     " x)
+    (println "O:     " o)
+    (println "Draws: " d)))
+
 (defn game-loop
   []
+  (println "TicTacToe \n\n")
   (game-setup)
   (while (game-is-started?)
-    (println "TicTacToe \n\n\n")
     (draw-board (:board @game-state))
     (println "Current Turn: " (:current_player @game-state))
     (println)
@@ -186,6 +198,7 @@
       (if (pos? (update-score result (:current_player @game-state)))
         (let []
           (game-ended)
+          (println (scoreboard (:scores @game-state)))
           (if (= "y" (play-again?))
             (game-loop)
             (println "Thanks for playing!")))

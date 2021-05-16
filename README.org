@@ -2,9 +2,10 @@
 
 Tic Tac Toe written in clojure
 
-** To add
+** To add [2/4]
 
-   - Draws
-   - Scoring
-   - Move history
+   - [X] Draws
+   - [X] Scoreboard
+   - [ ] History
+   - [ ] Refactor
 
