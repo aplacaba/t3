@@ -136,8 +136,8 @@
 
 (defn game-setup
   []
-  (swap! game-state (fn [state] merge(state {:board game-board
-                                             :status :started}))))
+  (swap! game-state assoc :board game-board
+                          :status :started))
 
 (defn get-move
   []
@@ -147,20 +147,24 @@
   []
   (ask-input "Play again? (y/n)" yn-validator))
 
+(defn game-ended
+  []
+  (swap! game-state assoc :status :ended))
+
 (defn game-summary
-  [])
+  []
+  (println "Exit"))
 
 (defn update-score
   [r player]
-  (case r
-    :win
-    (let [ret 1]
-      (swap! game-state (fn [state] (merge state {:x })))
-      ret)
-    :draw
-    1
-    :noresult
-    0))
+  (if (= r :noresult)
+    0
+    (let [target-key (if (= r :draw) :draw (keyword player))
+          old-score (:scores @game-state)
+          new-score {target-key 1}]
+      (swap! game-state assoc :scores (merge-with + old-score
+                                                    new-score))
+      1)))
 
 (defn game-loop
   []
@@ -172,35 +176,22 @@
     (println)
     (let [m (get-move)]
       (swap! game-state assoc :board (place (:board @game-state)
-                                          (keyword(str "s" (m)))
-                                          (:current_player @game-state))))
+                                            (keyword (str "s" m))
+                                            (:current_player @game-state))))
 
     (draw-board (:board @game-state))
     (println)
 
     (let [result (check-winner (:board @game-state))]
-      (if (pos? (update-score result))
+      (if (pos? (update-score result (:current_player @game-state)))
         (let []
           (game-ended)
           (if (= "y" (play-again?))
-            game-loop
+            (game-loop)
             (println "Thanks for playing!")))
-        (switch-player))))
-  (game-summary))
+        (switch-player)))))
 
-  ;; (while (not (check-winner (:board @game-state)))
-  ;;   (println "Tic Tac Toe\n\n\n")
-  ;;   (draw-board (:board @game-state))
-  ;;   (println "Current Player: " (:current_player @game-state))
-  ;;   (def move (ask-input "Enter square number: " move-validator))
-  ;;   (swap! game-state assoc :board (place (:board @game-state)
-  ;;                                         (keyword (str "s" move))
-  ;;                                         (:current_player @game-state)))
-  ;;   (if (not (check-winner (:board @game-state)))
-  ;;     (switch-player)))
-  ;; (draw-board (:board @game-state))
-  ;; (println (:current_player @game-state) " wins")
-  ;; (def play-again? (ask-input "Play again? (y/n)" yn-validator))
-  ;; (if (= "y" play-again?)
-  ;;   game-loop
-  ;;   (println "Thanks for playing.")))
+(defn main
+  []
+  (game-loop)
+  (game-summary))
