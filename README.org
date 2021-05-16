@@ -1,0 +1,10 @@
+* t3
+
+Tic Tac Toe written in clojure
+
+** To add
+
+   - Draws
+   - Scoring
+   - Move history
+
